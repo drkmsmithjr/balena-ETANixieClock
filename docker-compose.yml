@@ -1,0 +1,13 @@
+version: '2'
+volumes: 
+    resin-data:
+services:
+    main:
+        build: ./main
+        volumes: 
+            - 'resin-data:/data'
+        privileged: true
+        restart: always
+        network_mode: host
+        labels:
+           io.resin.features.dbus: '1'
