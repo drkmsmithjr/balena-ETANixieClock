@@ -1,7 +1,5 @@
 #!/usr/bin/bash
 
-
-
 #start wifi-connect.  This will start an access point if none is found
 export DBUS_SYSTEM_BUS_ADDRESS=unix:path=/host/run/dbus/system_bus_socket
 
@@ -16,27 +14,13 @@ else
     ./wifi-connect --portal-ssid="ETANixieClock Connect" --activity-timeout=300
 fi
 
-#./wifi-connect --portal-ssid="ETANixieClock Connect" --activity-timeout=300
-
-
-
 # Default to UTC if no TIMEZONE env variable is set
 echo "Setting time zone to ${TIMEZONE=America/Los_Angeles}"
 # This only works on Debian-based images
 echo "${TIMEZONE}" > /etc/timezone
-# for this container, we also need to remove local time if it exists
-if [ -f /etc/localtime ]; then
-    rm /etc/localtime
-fi
 dpkg-reconfigure tzdata
 
 # GoogleKey will be passed from Resin
 python /app/ETAclock.py ${GOOGLEKEY}
-# python /app/DummyStart.py
 
 
-while :
-do
-	echo "Press [CTRL+C] to stop.."
-	sleep 1
-done

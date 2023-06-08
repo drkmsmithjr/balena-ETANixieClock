@@ -1,5 +1,5 @@
 # balena-ETANixieClock
-This project takes the [ETANixieClock](https://wp.me/p85ddV-Ad) Raspberry pi project and converts it into a BalenaOS (Resin-io was recently changed to Balena-io) Docker Device.  
+This project takes the [ETANixieClock](https://wp.me/p85ddV-Ad) Raspberry pi project and converts it into a BalenaOS (Resin-io was recently changed to Balena-io) Docker Device.    This was originally an Resin-io device.   The blog below was written as a Resin-io device and shows the original Block
 
 See the complete blog for this project at [Easy IoT Fleet Deployment of ETA Nixie Tube Clocks](https://surfncircuits.com/?p=2665).  The goal of the blog and project is to allow on the fly updates of the code along with a method to maintian persistant data when the code is updated.    It also includes a way to externally setup a wifi connection when a valid wifi is not available, by converting the Raspberry Pi into an Access Point.   This method follows examples from the [Resin-io repository](https://github.com/resin-io-projects/resin-wifi-connect-example)
 For the Resin-io dashboard, two appliation parameters per device are needed to be sent to the Docker Containter.   

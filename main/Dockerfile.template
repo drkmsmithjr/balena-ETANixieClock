@@ -1,33 +1,5 @@
-FROM resin/%%RESIN_MACHINE_NAME%%-python
-#FROM balena/%%BALENA_MACHINE_NAME%%-python
-
-# Enable systemd
-ENV INITSYSTEM on
-
-#upgrade PIP
-RUN pip install --upgrade pip
-
-# Install Python.
-RUN apt-get update \
-	&& apt-get install -y python \
-	# Remove package lists to free up space
-	&& rm -rf /var/lib/apt/lists/* 
-
-RUN pip install python-networkmanager
-
-# install wireless tool
-# Use apt-get to install dependencies
-RUN apt-get update && apt-get install -yq --no-install-recommends \
-    dnsmasq wireless-tools && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /usr/src/app
-
-#install the access point program
-RUN curl https://api.github.com/repos/balena-io/wifi-connect/releases/latest -s \
-    | grep -hoP 'browser_download_url": "\K.*%%RESIN_ARCH%%\.tar\.gz' \
-    | xargs -n1 curl -Ls \
-    | tar -xvz -C /usr/src/app/   
+#FROM resin/%%RESIN_MACHINE_NAME%%-python
+FROM balenalib/%%BALENA_MACHINE_NAME%%-python:2.7 
 
 # Since we are using python 2.7, Google maps requires Requests <=2.28
 RUN pip install requests==2.27.1
@@ -35,6 +7,14 @@ RUN pip install requests==2.27.1
 # this is for RIP.GPIO install
 COPY ./requirements.txt /requirements.txt 
 RUN pip install -r /requirements.txt
+
+RUN install_packages dnsmasq wireless-tools
+
+WORKDIR /usr/src/app
+
+ARG VERSION="4.4.0"
+RUN curl -Ls "https://github.com/balena-io/wifi-connect/releases/download/v$VERSION/wifi-connect-v$VERSION-linux-%%BALENA_ARCH%%.tar.gz" \
+  | tar -xvz -C  /usr/src/app/
 
 # install Google Maps
 RUN pip install -U googlemaps

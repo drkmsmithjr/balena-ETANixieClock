@@ -25,30 +25,33 @@ class RepeatedSyncTimer(object):
     # set this so that the interval is at 50% 0f a second, for clock to update
     # only needed if we have seconds
     self.next_call = math.ceil(time.time()) + 0.5
-    self.start()
+    self.start(self.interval)
 
   def _run(self):
     self.is_running = False
-    self.start()
+    self.start(self.interval)
     self.function(*self.args,**self.kwargs)
 
-  def start(self):
+  def start(self, interval):
+    # interval: can be adjusted to something other than specified as default
+    #           interval in the __init__ function 
     if not self.is_running:
       #syncronize the interval to 50% to allow to account for errors in the timer.
       #the timer interval is adjusted to sychronize with real time.  
       # this is important for clocks.  Above this was set at 50% of the interval
-      self.next_call += self.interval
+      self.next_call += interval
       # test to ensure the self.next_call is greater than time
       # this is important when restarting the time
       if self.next_call < time.time():
-         self.next_call = math.ceil(time.time()) + 0.5
-         print("we needed to catchup time")
+         self.next_call = math.ceil(time.time()) + 0.5 + interval
+         print("we needed to catchup time",self.next_call,time.time())
       self._timer = Timer(self.next_call - time.time(), self._run)
       self._timer.start()
       self.is_running = True
 
   def stop(self):
     self._timer.cancel()
+    print("stopping timer",self.next_call,time.time())
     self.is_running = False
 
 # in this algorithm.  print the time first, followed by each of the destinations 
@@ -335,6 +338,7 @@ rt = RepeatedSyncTimer(LoopRate,PrtCurrentTimeSixNixie, datetime.datetime.now())
 
 # start the updateETA routine (in seconds between traffic updates)
 updateETATime = 1200
+updateETATime = 1200
 # run to initially get ETA
 updateETA()
 # start time
@@ -416,16 +420,31 @@ while GoodArgs:
 
    if TimerStopped:
       print("Starting All Clocks")
-      rt.start()
-      timerETA.start()  
+      rt.start(LoopRate)
+      
+      if timerETA.next_call - time.time() < 0:
+         updateETA()
+         print("Updating ETA after a long turnoff") 
+         
+      timerETA.start(updateETATime)  
       TimerStopped = False
    elif ETATimerStopped:
       print("Starting just the ETA update clock")
       # if the stop time is greater than the update ETA length multiple 
       # then update ETA immediately
-      if time.time() - ETAstoptime > updateETATime*.75:
-         updateETA()  
-      timerETA.start() 
+      #if time.time() - ETAstoptime > updateETATime*.75:
+      #   updateETA()
+         
+      # testing the timerETA.next_call and time.time values
+      print("timerETA.next_call = %s; time.time = %s" %(timerETA.next_call,time.time()))
+      # if we have been off longer than 1/2 the last expected update then get a 
+      # new update for the best ETA
+      # this works best for long intervals 
+      if timerETA.next_call - time.time() < (timerETA.next_call - ETAstoptime)/2:
+         updateETA()
+         print("Updating ETA after a long turnoff") 
+
+      timerETA.start(updateETATime) 
       ETAstarttime = time.time()
       ETATimerStopped = False     
    else:
