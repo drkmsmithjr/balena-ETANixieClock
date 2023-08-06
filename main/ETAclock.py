@@ -358,9 +358,10 @@ BurnInStart = 20
 # stop time hour( 1am)
 BurnInStop = 1
 # Digit Test Order.   
-DigitsToTest = [0,3,4,9,1,2,5,6,7,8]
+DigitsToTest =   [0  ,3  ,4  ,9  ,1  ,2  ,5  ,6  ,7  ,8]
 # The test time is BurnInMinutes when weighted at 1.0
-DigitsTimeTest = [1.5,1.5,1.5,.8,.1,.1,.1,0.3,.1,0.3]
+# June2023:  DigitsTimeTest = [1.5,1.5,1.5,0.8,0.1,0.3,0.1,0.1,0.1,0.2]
+DigitsTimeTest = [0.6,0.3,0.3,0.7,0.1,0.7,0.1,0.1,0.1,0.2]
 DigIndex = 0
 SecIndex = 0
 BurnInSec = BurnInMinutes*60

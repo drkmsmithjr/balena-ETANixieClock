@@ -35,8 +35,8 @@ python /app/ETAclock.py ${GOOGLEKEY}
 # python /app/DummyStart.py
 
 
-while :
-do
-	echo "Press [CTRL+C] to stop.."
-	sleep 1
-done
+#while :
+#do
+#   echo "Press [CTRL+C] to stop.."
+#   sleep 1
+#done
