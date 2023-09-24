@@ -351,7 +351,7 @@ def publish(topic,msg_json):
 # Main Loop
 
 # parameters for the mqtt client
-broker = 'brokerip.com'
+broker = 'www.surfncircuits.com'
 port = 1883
 base_topic = 'ETANixieClock/ETATime'
 client_id = 'ETAClock' + str(random.randint(0, 1000))
@@ -388,8 +388,15 @@ else:
    MQTTON = True
 
 # connect to MQTT.  it won't work if not available
-client = connect_mqtt()
-
+if MQTTON:
+   try:
+      client = connect_mqtt()
+   except:
+      print("ERROR Connecting to MQTT SERVER, Running without MQTT")
+      MQTTON = False   
+else:
+   print("No MQTT login info was detected")
+ 
 #Hard code initial origin and ETA locations
 dest = [0,0,0,0]
 dest[0] = {'toplace':'trestles','toaddress':'S El Camino Real, San Clemente, CA 92672', 'mode':'driving'}
