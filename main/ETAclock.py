@@ -1,9 +1,7 @@
 #!/usr/bin/python
 
 import NixieTube
-
 import googlemaps
-
 import datetime 
 import math
 import time
@@ -11,6 +9,11 @@ import sys
 from time import sleep
 from threading import Timer
 import pickle
+
+from paho.mqtt import client as mqtt_client
+import random
+import json
+
 
 # this timer will sychronize to system time time.time().   Great for clocks
 class RepeatedSyncTimer(object):
@@ -163,6 +166,19 @@ def PrtCurrentTimeSixNixie(timestr):
           ind3 = len(TravelDuration)-1
        #print(ind3)
        now = now + datetime.timedelta(seconds=TravelDuration[ind3]) + datetime.timedelta(minutes=ETDdelay)
+       # this is where we need to call the MQTT broker with the travel direction for destination ind3
+       msg = dest[ind3]['toplace']
+       msgLocate = dest[ind3]['toaddress']
+       if 'mode' in dest[ind3]:
+         msgMode = dest[ind3]['mode']
+       else:
+         msgMode = "driving"
+       
+       #msg_json = {'Name':"TestName",'Location':"33421 surf shoal",'ETATime':"1406:35:50",'Mode':"bicycle"}
+       msg_json = {'Name':msg,'Location':msgLocate,'ETATime':now.strftime("%I:%M:%S"),'Mode':msgMode}
+       topic = "ETANixieClock/ETATime" + str(ind3+1)
+       if MQTTON:
+          publish(topic,msg_json)
 
     seconds = int(now.strftime("%S"))
     seconds_1digit = int(math.floor(seconds/10.0))
@@ -230,6 +246,13 @@ def PrtCurrentTimeSixNixie(timestr):
 
 def updateETA():
      global clientkey
+     # Clint is for the MQTT server.  
+     global client 
+     
+     # for the MQTT server, reconnect to server
+     # every time we get the updated ETA.  Just in case
+     # client = connect_mqtt()     
+
 	 #create the google maps object using the key
      try:
         gmaps = googlemaps.Client(key=clientkey)
@@ -238,6 +261,7 @@ def updateETA():
            now = datetime.datetime.now()
            print(str(now))
            directions_result = gmaps.directions(origin=orig,destination = dest[x]['toaddress'], mode = "driving", avoid="tolls", departure_time = now, traffic_model = "best_guess" )
+           #directions_result = gmaps.directions(origin=orig,destination = dest[x]['toaddress'], mode = "driving", avoid="tolls", departure_time = now, traffic_model = "best_guess" )
            #directions_result = gmaps.directions(origin=orig,destination = dest[x]['toaddress'], mode = "driving", departure_time = now, traffic_model = "best_guess" )
            TravelDuration[x] = directions_result[0]['legs'][0]['duration']['value']
            TravelDurText[x] = directions_result[0]['legs'][0]['duration']['text']
@@ -273,31 +297,123 @@ def TimeForBurnIn(BurnInStart, BurnInStop, DigitSec2):
          return False
    
 
+def connect_mqtt():
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT Broker!")
+        else:
+            print("Failed to connect, return code %d\n", rc)
+
+    client = mqtt_client.Client(client_id)
+    client.username_pw_set(username, password)
+    client.on_connect = on_connect
+    client.connect(broker, port)
+    client.on_disconnect = on_disconnect
+    return client
+
+def on_disconnect(client, userdata, rc):
+    print("Disconnected with result code: %s", rc)
+    reconnect_count, reconnect_delay = 0, FIRST_RECONNECT_DELAY
+    while reconnect_count < MAX_RECONNECT_COUNT:
+        print("Reconnecting in %d seconds...", reconnect_delay)
+        time.sleep(reconnect_delay)
+
+        try:
+            client.reconnect()
+            print("Reconnected successfully!")
+            return
+        except Exception as err:
+            print("%s. Reconnect failed. Retrying...", err)
+
+        reconnect_delay *= RECONNECT_RATE
+        reconnect_delay = min(reconnect_delay, MAX_RECONNECT_DELAY)
+        reconnect_count += 1
+    print("Reconnect failed after %s attempts. Exiting...", reconnect_count)
+
+def publish(topic,msg_json):
+   # we need to pull in the client parameter 
+   global client 
+   client.loop_start()
+   if not client.is_connected():
+      print("publish: MQTT client is not connected!")
+      client.loop_stop()
+   else:
+      result = client.publish(topic, json.dumps(msg_json))
+      client.loop_stop
+      status = result[0]
+      if status == 0:
+         print("Send %s to topic %s" %(msg_json,topic))
+      else:
+         print("Failed to send message to topic %s" %topic)
+    
 
 
 # Main Loop
 
+# parameters for the mqtt client
+broker = 'brokerip.com'
+port = 1883
+base_topic = 'ETANixieClock/ETATime'
+client_id = 'ETAClock' + str(random.randint(0, 1000))
+username = 'testuser'
+password = 'testpw'
+
+FIRST_RECONNECT_DELAY = 1
+RECONNECT_RATE = 2
+MAX_RECONNECT_COUNT = 12
+MAX_RECONNECT_DELAY = 60
+
+
 # if no parameters are sent with the testdigit.py script, turn on  all nixie's a default
 # otherwise, turn them off... this assumes on command line they will be turned on.
 GoodArgs = True
+MQTTON = False
 
 if len(sys.argv) < 2:
-   print(" Please include google clientkey as parameter")
+   print(" Please include google clientkey as parameter ")
    GoodArgs = False
-else:
+elif len(sys.argv) > 5:
+   print(" two many parameters ")
+   GoodArgs = False
+elif len(sys.argv) < 3:
    # this key is needed for google maps ETA to work    Need to have a google maps API account.   
    clientkey = sys.argv[1]
+else:
+   # we have google key, mqtt and mqtt pw, and broker parameters
+   clientkey = sys.argv[1]   
+   # set the mqtt username and password with the 2nd and third parameter
+   username = sys.argv[2]
+   password = sys.argv[3]
+   broker = sys.argv[4]
+   MQTTON = True
+
+# connect to MQTT.  it won't work if not available
+client = connect_mqtt()
 
 #Hard code initial origin and ETA locations
 dest = [0,0,0,0]
-dest[0] = {'toplace':'trestles','toaddress':'S El Camino Real, San Clemente, CA 92672'}
-dest[1] = {'toplace':'huntington','toaddress':'21 Huntington Beach Pier, Huntington Beach, CA 92648'}
-dest[2] = {'toplace':'scripts','toaddress':'8564 El Paseo Grande, La Jolla, CA 92037'}
-dest[3] = {'toplace':'airport','toaddress':'18601 Airport Way, Santa Ana, CA 92707'}
+dest[0] = {'toplace':'trestles','toaddress':'S El Camino Real, San Clemente, CA 92672', 'mode':'driving'}
+dest[1] = {'toplace':'huntington','toaddress':'21 Huntington Beach Pier, Huntington Beach, CA 92648', 'mode':'driving'}
+dest[2] = {'toplace':'scripts','toaddress':'8564 El Paseo Grande, La Jolla, CA 92037', 'mode':'bicycling'}
+dest[3] = {'toplace':'airport','toaddress':'18601 Airport Way, Santa Ana, CA 92707', 'mode':'bicycling'}
 # clock location address
 orig = "25300 Harbor Drive, Dana Point, CA 92629"
 
+# default DigitsToTest and DigitsTimeTest
+# Burnin Times
+BurnInMinutes = 20
+# STart Time hour (8pm)
+BurnInStart = 20
+# stop time hour( 1am)
+BurnInStop = 1
+# Digit Test Order.   
+DigitsToTest =   [0  ,3  ,4  ,9  ,1  ,2  ,5  ,6  ,7  ,8]
+# The test time is BurnInMinutes when weighted at 1.0
+# June2023:  DigitsTimeTest = [1.5,1.5,1.5,0.8,0.1,0.3,0.1,0.1,0.1,0.2]
+DigitsTimeTest = [0.6,0.3,0.3,0.7,0.1,0.7,0.1,0.1,0.1,0.2]
+
 locatefile = "/data/locations.txt"
+BurninFile = "/data/burnin.txt"
 
 # check to see if the locations.txt file exists.  If it does not then create it.   
 # otherwise, read
@@ -307,6 +423,19 @@ try:
 except:
    with open(locatefile,'w') as f:
       pickle.dump((dest,orig),f)
+
+# check to see if the BurninFile file exists.  If it does not then create it.  
+try:
+   with open(BurninFile,'r') as f:
+     BurnInMinutes,BurnInStart,BurnInStop,DigitsToTest,DigitsTimeTest  = pickle.load(f)   
+   print("We read the Burnin Data")
+   print("DigitsToTest = %s" % DigitsToTest)
+   print("DigitsTestTime = %s" % DigitsTimeTest)
+except:
+   with open(BurninFile,'w') as f:
+      pickle.dump((BurnInMinutes,BurnInStart,BurnInStop,DigitsToTest,DigitsTimeTest),f)
+   print("We dumped the Burnin Data")
+
 
 #global parameters for interupt.  Needs to be as larger as dest array below
 TravelDuration = [0]*len(dest)
@@ -352,16 +481,16 @@ print("after timer thread call")
 
 
 # Burnin Times
-BurnInMinutes = 20
+#BurnInMinutes = 20
 # STart Time hour (8pm)
-BurnInStart = 20
+#BurnInStart = 20
 # stop time hour( 1am)
-BurnInStop = 1
+#BurnInStop = 1
 # Digit Test Order.   
-DigitsToTest =   [0  ,3  ,4  ,9  ,1  ,2  ,5  ,6  ,7  ,8]
+#DigitsToTest =   [0  ,3  ,4  ,9  ,1  ,2  ,5  ,6  ,7  ,8]
 # The test time is BurnInMinutes when weighted at 1.0
 # June2023:  DigitsTimeTest = [1.5,1.5,1.5,0.8,0.1,0.3,0.1,0.1,0.1,0.2]
-DigitsTimeTest = [0.6,0.3,0.3,0.7,0.1,0.7,0.1,0.1,0.1,0.2]
+#DigitsTimeTest = [0.6,0.3,0.3,0.7,0.1,0.7,0.1,0.1,0.1,0.2]
 DigIndex = 0
 SecIndex = 0
 BurnInSec = BurnInMinutes*60

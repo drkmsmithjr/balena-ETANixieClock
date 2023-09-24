@@ -31,9 +31,9 @@ fi
 dpkg-reconfigure tzdata
 
 # GoogleKey will be passed from Resin
-python /app/ETAclock.py ${GOOGLEKEY}
+# the MQTTUSER - username and MQTTPW-password will also be passed the ETAclock if available.   
+python /app/ETAclock.py ${GOOGLEKEY} ${MQTTUSER} ${MQTTPW} ${MQTTBROKER}
 # python /app/DummyStart.py
-
 
 #while :
 #do

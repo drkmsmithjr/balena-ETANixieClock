@@ -3,7 +3,7 @@
 import pickle
 import sys
 
-import googlemaps
+#import googlemaps
 import datetime
 
 # load the destinations and origins
@@ -31,9 +31,11 @@ elif len(sys.argv) == 2:
 elif len(sys.argv) == 3:
    clientkey = sys.argv[2]
    gmaps = googlemaps.Client(key=clientkey)
+   import googlemaps
    OkToTestGoogle = True
 # python Setuplocations.py [datafile] key ${GOOGLEKEY}
 elif len(sys.argv) == 4:
+   import googlemaps
    locatefile = sys.argv[1]
    clientkey = sys.argv[3]
    gmaps = googlemaps.Client(key=clientkey)
@@ -56,7 +58,10 @@ while True:
    #
    for index,x in enumerate(dest):
       output = str(index+1) + ": "
-      output = output + x['toplace'] + ": " + x['toaddress']
+      if 'mode' in x:
+         output = output + x['toplace'] + ": " + x['toaddress'] + ": " + x['mode']
+      else:
+         output = output + x['toplace'] + ": " + x['toaddress']
       print(output)
 
    print("\n[A]: Add a location:")
@@ -76,9 +81,10 @@ while True:
          while True:
             raw_option3 = raw_input("What is the name (i.e. work, airport)?: ")
             raw_option2 = raw_input("Enter Google Address: ")
+            raw_option3 = raw_input("Enter Mode: driving, walking, bicycling ")
             try:
                # add a google address check
-               dest.append({'toplace':str(raw_option3),'toaddress':str(raw_option2)})
+               dest.append({'toplace':str(raw_option3),'toaddress':str(raw_option2), 'mode':str(raw_option3)})
                break
             except ValueError:
                print ("This is not a valid address.  Please try again")
@@ -127,14 +133,14 @@ while True:
          for index,x in enumerate(dest):
             now = datetime.datetime.now()
             try:
-               directions_result = gmaps.directions(origin=orig,destination = x['toaddress'], mode = "driving", avoid="tolls", departure_time = now, traffic_model = "best_guess" )
+               directions_result = gmaps.directions(origin=orig,destination = x['toaddress'], mode = x['mode'], avoid="tolls", departure_time = now, traffic_model = "best_guess" )
                TravelDuration = directions_result[0]['legs'][0]['duration']['value']
                TravelDurText = directions_result[0]['legs'][0]['duration']['text']
                print(x['toplace'] + " " + " Duration: " + TravelDurText)
             except:
                print("There was a fault in the directions_result. restablishing connection")
                gmaps = googlemaps.Client(key=clientkey)
-               directions_result = gmaps.directions(origin=orig,destination = x['toaddress'], mode = "driving", avoid="tolls", departure_time = now, traffic_model = "best_guess" )
+               directions_result = gmaps.directions(origin=orig,destination = x['toaddress'], mode = x['mode'], avoid="tolls", departure_time = now, traffic_model = "best_guess" )
                TravelDuration = directions_result[0]['legs'][0]['duration']['value']
                TravelDurText = directions_result[0]['legs'][0]['duration']['text']  
                print(x['toplace'] + " " + " Duration: " + TravelDurText)
