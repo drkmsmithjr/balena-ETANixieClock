@@ -79,12 +79,12 @@ while True:
          print("You are at the maximum ETA: Remove on first and try again")
       else: 
          while True:
-            raw_option3 = raw_input("What is the name (i.e. work, airport)?: ")
+            raw_option1 = raw_input("What is the name (i.e. work, airport)?: ")
             raw_option2 = raw_input("Enter Google Address: ")
             raw_option3 = raw_input("Enter Mode: driving, walking, bicycling ")
             try:
                # add a google address check
-               dest.append({'toplace':str(raw_option3),'toaddress':str(raw_option2), 'mode':str(raw_option3)})
+               dest.append({'toplace':str(raw_option1),'toaddress':str(raw_option2), 'mode':str(raw_option3)})
                break
             except ValueError:
                print ("This is not a valid address.  Please try again")
