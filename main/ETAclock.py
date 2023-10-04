@@ -175,7 +175,7 @@ def PrtCurrentTimeSixNixie(timestr):
          msgMode = "driving"
        
        #msg_json = {'Name':"TestName",'Location':"33421 surf shoal",'ETATime':"1406:35:50",'Mode':"bicycle"}
-       msg_json = {'Name':msg,'Location':msgLocate,'ETATime':now.strftime("%I:%M:%S"),'Mode':msgMode}
+       msg_json = {'Name':msg,'Location':msgLocate,'ETATime':now.strftime("%I:%M:%S %p"),'Mode':msgMode}
        topic = "ETANixieClock/ETATime" + str(ind3+1)
        if MQTTON:
           publish(topic,msg_json)
@@ -465,7 +465,6 @@ pre_BlankCntrl = [False,False,False,False,False]
 # this circuit will then print the time to the screen and loops through the times 
 # 
 # this clock will print every second
-
 #rt = RepeatedSyncTimer(LoopRate,PrtCurrentTimeOneNixie,datetime.datetime.now())
 
 rt = RepeatedSyncTimer(LoopRate,PrtCurrentTimeSixNixie, datetime.datetime.now())
