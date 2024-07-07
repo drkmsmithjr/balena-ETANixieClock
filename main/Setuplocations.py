@@ -3,7 +3,7 @@
 import pickle
 import sys
 
-#import googlemaps
+import googlemaps
 import datetime
 
 # load the destinations and origins

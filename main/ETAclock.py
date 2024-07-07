@@ -260,7 +260,7 @@ def updateETA():
         for x in range (0,len(dest)):
            now = datetime.datetime.now()
            print(str(now))
-           directions_result = gmaps.directions(origin=orig,destination = dest[x]['toaddress'], mode = "driving", avoid="tolls", departure_time = now, traffic_model = "best_guess" )
+           directions_result = gmaps.directions(origin=orig,destination = dest[x]['toaddress'], mode = dest[x]['mode'], avoid="tolls", departure_time = now, traffic_model = "best_guess" )
            #directions_result = gmaps.directions(origin=orig,destination = dest[x]['toaddress'], mode = "driving", avoid="tolls", departure_time = now, traffic_model = "best_guess" )
            #directions_result = gmaps.directions(origin=orig,destination = dest[x]['toaddress'], mode = "driving", departure_time = now, traffic_model = "best_guess" )
            TravelDuration[x] = directions_result[0]['legs'][0]['duration']['value']
